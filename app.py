@@ -10,29 +10,29 @@ from streamlit_folium import st_folium
 import copy
 
 st.set_page_config(layout="wide")
+vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=11,tiles=None)
+folium.TileLayer('CartoDB positron',name="Light Map",control=False).add_to(vic_inc_map)
+
+vic_geo = gpd.read_file("suburb-10-vic.geojson")
+vic_geo = vic_geo[['vic_loca_2','geometry']]
+Bendigo = vic_geo[vic_geo["vic_loca_2"] == "BENDIGO"]
+Strath = vic_geo[vic_geo["vic_loca_2"] == "STRATHFIELDSAYE"]
+Axe_C = vic_geo[vic_geo["vic_loca_2"] == "AXE CREEK"]
+Axe_D = vic_geo[vic_geo["vic_loca_2"] == "AXE DALE"]
+Mandu = vic_geo[vic_geo["vic_loca_2"] == "MANDURANG"]
+Sedgwick = vic_geo[vic_geo["vic_loca_2"] == "SEDGWICK"]
+
+labels = ["BENDIGO","STRATHFIELDSAYE","AXE CREEK","AXE DALE","MANDURANG","SEDGWICK","MANDURANG SOUTH","EMU CREEK","EPPALOCK","SPRING GULLY"]
+labels_enum = [i for (i,J) in enumerate(labels)]
+gdfBendigo = vic_geo[vic_geo["vic_loca_2"].isin(labels)]
+def dontdo():
+    suburbs = set(vic_geo["vic_loca_2"])
+    sorted_suburbs = sorted(suburbs, reverse=False)
+    print(sorted_suburbs)
 
 
 def main():
-    vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=11,tiles=None)
-    folium.TileLayer('CartoDB positron',name="Light Map",control=False).add_to(vic_inc_map)
 
-    vic_geo = gpd.read_file("suburb-10-vic.geojson")
-    vic_geo = vic_geo[['vic_loca_2','geometry']]
-    Bendigo = vic_geo[vic_geo["vic_loca_2"] == "BENDIGO"]
-    Strath = vic_geo[vic_geo["vic_loca_2"] == "STRATHFIELDSAYE"]
-    Axe_C = vic_geo[vic_geo["vic_loca_2"] == "AXE CREEK"]
-    Axe_D = vic_geo[vic_geo["vic_loca_2"] == "AXE DALE"]
-    Mandu = vic_geo[vic_geo["vic_loca_2"] == "MANDURANG"]
-    Sedgwick = vic_geo[vic_geo["vic_loca_2"] == "SEDGWICK"]
-
-    labels = ["BENDIGO","STRATHFIELDSAYE","AXE CREEK","AXE DALE","MANDURANG","SEDGWICK","MANDURANG SOUTH","EMU CREEK","EPPALOCK","SPRING GULLY"]
-    labels_enum = [i for (i,J) in enumerate(labels)]
-    gdfBendigo = vic_geo[vic_geo["vic_loca_2"].isin(labels)]
-
-    def dontdo():
-        suburbs = set(vic_geo["vic_loca_2"])
-        sorted_suburbs = sorted(suburbs, reverse=False)
-        print(sorted_suburbs)
     # Creating a map object
     #melb_inc_map = folium.Map(location=[y_map, x_map], zoom_start=6,tiles=None)
     gdfBendigo['new_col'] = range(1, len(gdfBendigo) + 1)
