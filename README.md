@@ -1,1 +1,1 @@
-# NatureStewards
+# Nature Stewards Course Bendigo
