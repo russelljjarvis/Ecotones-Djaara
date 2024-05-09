@@ -72,10 +72,10 @@ def main():
     #gdfBendigo['new_col'] = range(1, len(gdfBendigo) + 1)
     #gdfBendigo
     # Creating choropleth
-    vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=11,tiles=None)
+    vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=10,tiles=None)
     #folium.TileLayer('CartoDB positron',name="Light Map",control=False).add_to(vic_inc_map)
-
-    folium.Choropleth(geo_data=Bendigodf,
+    #st.write(Bendigodf.columns)
+    folium.Choropleth(geo_data=Bendigodf.to_json(),
                 name='Choropleth',         
                 data=Bendigodf,
                 columns=['EVC','geometry'],
@@ -83,13 +83,14 @@ def main():
                 fill_opacity=0.6, 
                 line_opacity=0.8,
                 smooth_factor=0,     
-                highlight=True,
+                highlight=False,
                     ).add_to(vic_inc_map) 
-    
+    folium.LayerControl().add_to(vic_inc_map)
+
     # Adding labels to map
     style_function = lambda x: {'fillColor': '#ffffff', 
                                 'color':'#000000', 
-                                'fillOpacity': 0.1, 
+                                'fillOpacity': 0.0, 
                                 'weight': 0.1}
     BioRegionName = folium.features.GeoJson(
         Bendigodf,
