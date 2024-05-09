@@ -8,12 +8,15 @@ import pdb
 import streamlit as st
 from streamlit_folium import st_folium
 import copy
-
+from folium.plugins import Draw
 st.set_page_config(layout="wide")
+
+
+
+vic_geo = gpd.read_file("suburb-10-vic.geojson")
 vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=11,tiles=None)
 folium.TileLayer('CartoDB positron',name="Light Map",control=False).add_to(vic_inc_map)
 
-vic_geo = gpd.read_file("suburb-10-vic.geojson")
 vic_geo = vic_geo[['vic_loca_2','geometry']]
 Bendigo = vic_geo[vic_geo["vic_loca_2"] == "BENDIGO"]
 Strath = vic_geo[vic_geo["vic_loca_2"] == "STRATHFIELDSAYE"]
@@ -23,12 +26,9 @@ Mandu = vic_geo[vic_geo["vic_loca_2"] == "MANDURANG"]
 Sedgwick = vic_geo[vic_geo["vic_loca_2"] == "SEDGWICK"]
 
 labels = ["BENDIGO","STRATHFIELDSAYE","AXE CREEK","AXE DALE","MANDURANG","SEDGWICK","MANDURANG SOUTH","EMU CREEK","EPPALOCK","SPRING GULLY"]
+
 labels_enum = [i for (i,J) in enumerate(labels)]
 gdfBendigo = vic_geo[vic_geo["vic_loca_2"].isin(labels)]
-def dontdo():
-    suburbs = set(vic_geo["vic_loca_2"])
-    sorted_suburbs = sorted(suburbs, reverse=False)
-    print(sorted_suburbs)
 
 
 def main():
@@ -48,8 +48,7 @@ def main():
                 smooth_factor=0,     
                 highlight=True,
                     ).add_to(vic_inc_map) 
-
-
+    
     # Adding labels to map
     style_function = lambda x: {'fillColor': '#ffffff', 
                                 'color':'#000000', 
@@ -70,13 +69,22 @@ def main():
     folium.LayerControl().add_to(vic_inc_map)
 
     folium.LayerControl().add_to(vic_inc_map)
+    Draw(export=True).add_to(vic_inc_map)
 
     #vic_inc_map.show_in_browser()
     #st.set_page_config(layout="wide")
     st_data = st_folium(vic_inc_map, width=1725)
 
+    output = st_folium(m, width=700, height=500)
+
 if __name__ == "__main__":
     main()
+
+def dontdo():
+    suburbs = set(vic_geo["vic_loca_2"])
+    sorted_suburbs = sorted(suburbs, reverse=False)
+    print(sorted_suburbs)
+
 
 def dontdo2():
     nbh_count_df = listing_df.groupby('neighbourhood')['id'].nunique().reset_index()
