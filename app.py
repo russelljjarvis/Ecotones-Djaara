@@ -7,7 +7,7 @@ import pandas as pd
 import pdb
 import streamlit as st
 from streamlit_folium import st_folium
-
+import branca.colormap as cmp
 #import plotly.express as px
 #import plotly.graph_objects as go
 #from urllib.request import urlopen
@@ -41,14 +41,30 @@ gdfBendigo = vic_geo[vic_geo["vic_loca_2"].isin(labels)]
 
 with open("EVCS_Goldfields_geom.p","rb") as f:
     Bendigodf = pickle.load(f)
+temp = Bendigodf.to_json()
 
 #import pdb
 #pdb.set_trace()
+with open("EVCS_Goldfields.p","rb") as f:
+    unique_EVCs = pickle.load(f)
+print(unique_EVCs)
 
+step = cmp.StepColormap(
+ ['yellow', 'green', 'purple'],
+ vmin=3, vmax=10,
+ index=[3, 6, 8, 10],  #for change in the colors, not used fr linear
+ caption='Color Scale for Map'    #Caption for Color scale or Legend
+)
 
 def main():
     st.header("EVCS of North Central Catchment Region")
+    st.markdown("{0}".format(unique_EVCs))
 
+
+    #unemployment_dict = #Bendigodf.set_index('EVC')
+    #geo_json_data = json.loads(requests.get(state_geo).text)
+    #usa_step = folium.Map([-36.7569, 144.2786], tiles='cartodbpositron', zoom_start=3)
+    #step.add_to(usa_step)     #adds colorscale or legend
 
     """
     fig = px.choropleth_mapbox(Bendigodf, geojson=Bendigodf.to_json(), color=Bendigodf.EVC,
@@ -75,7 +91,8 @@ def main():
     vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=10,tiles=None)
     #folium.TileLayer('CartoDB positron',name="Light Map",control=False).add_to(vic_inc_map)
     #st.write(Bendigodf.columns)
-    folium.Choropleth(geo_data=Bendigodf.to_json(),
+
+    folium.Choropleth(geo_data=temp,
                 name='Choropleth',         
                 data=Bendigodf,
                 columns=['EVC','geometry'],
@@ -83,7 +100,7 @@ def main():
                 fill_opacity=0.6, 
                 line_opacity=0.8,
                 smooth_factor=0,     
-                highlight=False,
+                highlight=True,
                     ).add_to(vic_inc_map) 
     folium.LayerControl().add_to(vic_inc_map)
 
@@ -104,6 +121,17 @@ def main():
     )
     vic_inc_map.add_child(BioRegionName)
     vic_inc_map.keep_in_front(BioRegionName)
+    folium.GeoJson(
+        temp,
+        style_function=lambda feature: {
+            'fillColor': Bendigodf.EVC.values,
+            'color': 'black',       #border color for the color fills
+            'weight': 1,            #how thick the border has to be
+            'dashArray': '5, 3'  #dashed lines length,space between them
+        }
+    ).add_to(vic_inc_map)
+    
+    
     folium.LayerControl().add_to(vic_inc_map)
 
     Draw(export=True).add_to(vic_inc_map)
