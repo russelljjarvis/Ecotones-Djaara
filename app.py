@@ -57,8 +57,9 @@ step = cmp.StepColormap(
 )
 
 def main():
-    st.header("EVCS of North Central Catchment Region")
-    st.table(unique_EVCs)
+    st.markdown("### Ecological Vegetation Class (EVC)")
+
+    st.markdown("# Mouse over plot of whole catchment EVCs")
 
 
     #unemployment_dict = #Bendigodf.set_index('EVC')
@@ -121,18 +122,17 @@ def main():
     )
     vic_inc_map.add_child(BioRegionName)
     vic_inc_map.keep_in_front(BioRegionName)
-    #colors_ = folium.features.GeoJson(
-    #    temp,
-     ##   style_function=lambda feature: {
-     #       'fillColor': Bendigodf.EVC.values,
-     #       'color': 'black',       #border color for the color fills
-     #       'weight': 1,            #how thick the border has to be
-     #       'dashArray': '5, 3'  #dashed lines length,space between them
-     #   }
-    #)#.add_to(vic_inc_map)
-    
-    #vic_inc_map.add_child(colors_)
-    #vic_inc_map.keep_in_front(colors_)
+    colors_ = folium.GeoJson(
+        Bendigodf,
+        style_function=lambda feature: {
+            'fillColor': Bendigodf.EVC.values,
+            'color': 'black',       #border color for the color fills
+            'weight': 1,            #how thick the border has to be
+            'dashArray': '5, 3'  #dashed lines length,space between them
+        }
+    )
+    vic_inc_map.add_child(colors_)
+    vic_inc_map.keep_in_front(colors_)
     
     folium.LayerControl().add_to(vic_inc_map)
 
@@ -141,6 +141,9 @@ def main():
 
     #vic_inc_map.show_in_browser()
     st_data = st_folium(vic_inc_map, width=1725)
+    st.header("EVCS of North Central Catchment Region/Gold Fields")
+    st.table(unique_EVCs)
+
 
     #output = st_folium(m, width=700, height=500)
 
