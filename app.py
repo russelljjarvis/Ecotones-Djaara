@@ -67,20 +67,18 @@ def main():
     #usa_step = folium.Map([-36.7569, 144.2786], tiles='cartodbpositron', zoom_start=3)
     #step.add_to(usa_step)     #adds colorscale or legend
 
-    """
-    fig = px.choropleth_mapbox(Bendigodf, geojson=Bendigodf.to_json(), color=Bendigodf.EVC,
-                            color_continuous_scale="Viridis",
-                            range_color=(0, 12),
-                            mapbox_style="carto-positron",
-                            zoom=12, 
-                            center = {"lat": -36.7569, "lon": 144.2786},
-                            opacity=0.1,
-                            labels=Bendigodf.EVC,
-                            width=900,
-                            height=700
-                            )
+    #fig = px.choropleth_mapbox(Bendigodf, geojson=Bendigodf.to_json(), color=Bendigodf.EVC,
+    #                        color_continuous_scale="Viridis",
+    #                        range_color=(0, 12),
+    #                        mapbox_style="carto-positron",
+    #                        zoom=12, 
+    #                        center = {"lat": -36.7569, "lon": 144.2786},
+    #                        opacity=0.1,
+    #                        labels=Bendigodf.EVC,
+    #                        width=900,
+    #                        height=700
+    #                        )
 
-    """
     #fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     #fig.show()
     #st.plotly_chart(fig)
@@ -122,17 +120,17 @@ def main():
     )
     vic_inc_map.add_child(BioRegionName)
     vic_inc_map.keep_in_front(BioRegionName)
-    colors_ = folium.GeoJson(
-        Bendigodf,
-        style_function=lambda feature: {
-            'fillColor': Bendigodf.EVC.values,
-            'color': 'black',       #border color for the color fills
-            'weight': 1,            #how thick the border has to be
-            'dashArray': '5, 3'  #dashed lines length,space between them
-        }
-    )
-    vic_inc_map.add_child(colors_)
-    vic_inc_map.keep_in_front(colors_)
+    #colors_ = folium.GeoJson(
+    #    Bendigodf,
+    #    style_function=lambda feature: {
+    #        'fillColor': Bendigodf.EVC.values[feature],
+    #        'color': 'black',       #border color for the color fills
+    #        'weight': 1,            #how thick the border has to be
+    #        'dashArray': '5, 3'  #dashed lines length,space between them
+    #    }
+    #)
+    #vic_inc_map.add_child(colors_)
+    #vic_inc_map.keep_in_front(colors_)
     
     folium.LayerControl().add_to(vic_inc_map)
 
