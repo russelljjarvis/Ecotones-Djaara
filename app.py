@@ -43,11 +43,14 @@ with open("EVCS_Goldfields_geom.p","rb") as f:
     Bendigodf = pickle.load(f)
 temp = Bendigodf.to_json()
 
+st.write(Bendigodf.isnull().values.any())
+print(Bendigodf.isnull().values.any())
+
 #import pdb
 #pdb.set_trace()
 with open("EVCS_Goldfields.p","rb") as f:
     unique_EVCs = pickle.load(f)
-print(unique_EVCs)
+#print(unique_EVCs)
 
 step = cmp.StepColormap(
  ['yellow', 'green', 'purple'],
@@ -88,16 +91,32 @@ def main():
     #gdfBendigo
     # Creating choropleth
     vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=10,tiles=None)
+
+
+
     #folium.TileLayer('CartoDB positron',name="Light Map",control=False).add_to(vic_inc_map)
     #st.write(Bendigodf.columns)
+
+
+    #folium.Choropleth(geo_data=gdfBendigo,
+    #            name='Choropleth',         
+    #            data=gdfBendigo,
+    #            columns=['vic_loca_2','geometry'],
+    #            fill_color='YlOrRd',
+    #            fill_opacity=0.9, 
+    #            line_opacity=0.9,
+    #            smooth_factor=0,     
+    #            highlight=False,
+    #                ).add_to(vic_inc_map) 
+    #folium.LayerControl().add_to(vic_inc_map)
 
     folium.Choropleth(geo_data=temp,
                 name='Choropleth',         
                 data=Bendigodf,
                 columns=['EVC','geometry'],
                 fill_color='YlOrRd',
-                fill_opacity=0.6, 
-                line_opacity=0.8,
+                fill_opacity=0.4, 
+                line_opacity=0.4,
                 smooth_factor=0,     
                 highlight=True,
                     ).add_to(vic_inc_map) 
