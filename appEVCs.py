@@ -5,7 +5,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import pickle
 import pandas as pd
-import holoviews as hv
+#import holoviews as hv
 import streamlit.components.v1 as components
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -102,12 +102,15 @@ def slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC):
         st.pyplot()
 
     col1, col2 = st.columns(2)
-    col1.subheader("Ecotern")
+    col1.subheader("Just Ecotern")
     col2.subheader("Selected EVC")
 
     #st.write(adjacencies)
     #st.write(Bendigodf.index.isin(adjacencies))
     filtered_eco_tern = Bendigodf[Bendigodf.index.isin(adjacencies)]
+
+    st.write(len(filtered_eco_tern))
+    st.write(filtered_eco_tern)
     SingleEVC = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC]
 
     with col1:
@@ -204,8 +207,12 @@ def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict):
 
     # Load HTML file in HTML component for display on Streamlit page
     components.html(HtmlFile.read(), height=435)
-    adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
-    print(adjacency_dict.keys())
+
+
+    adjacent_indexs = [v for number_choice in choice_df_index for v in adjacency_dict[number_choice] ]
+    #adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
+    print(adjacent_indexs)
+    print(number_choice)
     return ecoterns,adjacent_indexs
 
 #url = 'https://raw.githubusercontent.com/plotly/plotly.js/master/test/image/mocks/sankey_energy.json'
@@ -233,14 +240,7 @@ def goldfieldslocations():
     vic_geo = gpd.read_file("suburb-10-vic.geojson")
 
     vic_geo = vic_geo[['vic_loca_2','geometry']]
-    Bendigo = vic_geo[vic_geo["vic_loca_2"] == "BENDIGO"]
-    Strath = vic_geo[vic_geo["vic_loca_2"] == "STRATHFIELDSAYE"]
-    Axe_C = vic_geo[vic_geo["vic_loca_2"] == "AXE CREEK"]
-    Axe_D = vic_geo[vic_geo["vic_loca_2"] == "AXE DALE"]
-    Mandu = vic_geo[vic_geo["vic_loca_2"] == "MANDURANG"]
-    Sedgwick = vic_geo[vic_geo["vic_loca_2"] == "SEDGWICK"]
     labels = ["BENDIGO","STRATHFIELDSAYE","AXE CREEK","AXE DALE","MANDURANG","SEDGWICK","MANDURANG SOUTH","EMU CREEK","EPPALOCK","SPRING GULLY"]
-    labels_enum = [i for (i,J) in enumerate(labels)]    
     gdfBendigo = vic_geo[vic_geo["vic_loca_2"].isin(labels)]
     gdfBendigo.plot(column="vic_loca_2",figsize=(6, 6), legend=True)
     st.pyplot()
