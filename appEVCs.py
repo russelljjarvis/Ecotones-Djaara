@@ -1,6 +1,5 @@
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from geo_adjacency.adjacency import AdjacencyEngine
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import pickle
@@ -13,10 +12,11 @@ import streamlit as st
 from pyvis.network import Network
 #import seaborn as sns
 import os
-import folium
+#import folium
 #import altair as alt
 from matplotlib import pyplot as plt
 from scipy.spatial import voronoi_plot_2d
+#from scipy.spatial import voronoi_plot_2d
 
 #voronoi_plot_2d(engine.vor)
 #plt.show()
@@ -41,24 +41,28 @@ def Compute_EVC_DF_FromData():
         pickle.dump(Bendigodf,f)
     return None
 
-@st.cache
+#@st.cache_data
 def Load_EVC_DF():
     with open("EVCS_Goldfields_geom.p","rb") as f:
         Bendigodf = pickle.load(f)
     return Bendigodf
 
 def compute_adjacency(Bendigodf):
+    from geo_adjacency.adjacency import AdjacencyEngine
+
     engine = AdjacencyEngine(Bendigodf.geometry)
     adjacency_dict = engine.get_adjacency_dict()
     #print(adjacency_dict)
     #engine.plot_adjacency_dict()
     engine.plot_adjacency_dict()
     st.pyplot()
+    
+    voronoi_plot_2d(engine.vor)
     return adjacency_dict,engine
 
 st.header("Ecoterms and EVCS of North Central Catchment Region/Gold Fields")
 
-@st.cache
+#@st.cache_data
 def source_data():
     try:
         with open("adjacency_dict.p","rb") as f:
@@ -81,6 +85,16 @@ def source_data():
 
     return adjacency_dict,EVC_name_dict,named_connectome,links
 
+#source = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC]
+def renewed(source,Bendigodf):
+    engine = AdjacencyEngine(source.geometry)
+    adjacency_dict = engine.get_adjacency_dict()
+
+    for source_i, target_i_list in output.items():
+        source_geom = source_geometries[source_i]
+        target_geoms = [target_geometries[i] for i in target_i_list]
+
+
 def main():
     Bendigodf = Load_EVC_DF()
     adjacency_dict,EVC_name_dict,named_connectome,links = source_data()
@@ -92,15 +106,6 @@ def main():
     choice_df_index = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC].index
 
 
-    #source = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC]
-    def renewed(source,Bendigodf):
-        engine = AdjacencyEngine(source.geometry)
-        adjacency_dict = engine.get_adjacency_dict()
-
-        for source_i, target_i_list in output.items():
-            source_geom = source_geometries[source_i]
-            target_geoms = [target_geometries[i] for i in target_i_list]
-
 
 
     ecoterns,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict)
@@ -109,7 +114,7 @@ def main():
     #st.write(adjacency_dict)
     slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC)
 
-    compute_adjacency(Bendigodf)
+    #compute_adjacency(Bendigodf)
 
 
 def slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC):
@@ -135,8 +140,8 @@ def slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC):
     #st.write(Bendigodf.index.isin(adjacencies))
     filtered_eco_tern = Bendigodf[Bendigodf.index.isin(adjacencies)]
 
-    st.write(len(filtered_eco_tern))
-    st.write(filtered_eco_tern)
+    #st.write(len(filtered_eco_tern))
+    #st.write(filtered_eco_tern)
     SingleEVC = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC]
 
     with col1:
