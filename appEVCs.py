@@ -13,22 +13,13 @@ from pyvis.network import Network
 #import seaborn as sns
 import os
 #import folium
-#import altair as alt
 from matplotlib import pyplot as plt
 from scipy.spatial import voronoi_plot_2d
-#from scipy.spatial import voronoi_plot_2d
-
-#voronoi_plot_2d(engine.vor)
-#plt.show()
-
-
 #from streamlit_folium import st_folium
 #from folium.plugins import Draw
 st.set_option('deprecation.showPyplotGlobalUse', False)
 #import plotly.graph_objects as go
 #import urllib, json
-
-#import pickle
 st.set_page_config(layout="wide")
 
 
@@ -58,6 +49,8 @@ def compute_adjacency(Bendigodf):
     st.pyplot()
     
     voronoi_plot_2d(engine.vor)
+    st.pyplot()
+
     return adjacency_dict,engine
 
 st.header("Ecoterms and EVCS of North Central Catchment Region/Gold Fields")
@@ -70,7 +63,7 @@ def source_data():
     except:
 
         adjacency_dict,engine = compute_adjacency(Bendigodf)
-        EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf["X_GROUPNAME"].values))
+        EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf[used_scheme].values))
         named_connectome = dict((EVC_name_dict[k],list(set([EVC_name_dict[v_] for v_ in v]))) for (k,v) in adjacency_dict.items() )
         #enumerated_connectome = dict((EVC_name_dict[k],list(set([EVC_name_dict[v_] for v_ in v]))) for (k,v) in adjacency_dict.items() )
         #simple_connectome = [ [v_ for v_ in v] for (k,v) in adjacency_dict.items() ]
@@ -85,7 +78,7 @@ def source_data():
 
     return adjacency_dict,EVC_name_dict,named_connectome,links
 
-#source = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC]
+#source = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
 def renewed(source,Bendigodf):
     engine = AdjacencyEngine(source.geometry)
     adjacency_dict = engine.get_adjacency_dict()
@@ -98,77 +91,99 @@ def renewed(source,Bendigodf):
 def main():
     Bendigodf = Load_EVC_DF()
     adjacency_dict,EVC_name_dict,named_connectome,links = source_data()
-
-
-    EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf["X_GROUPNAME"].values))
-    #inverted_EVC_name_dict = dict((v,k) for k,v in EVC_name_dict.items())
+    used_scheme = st.radio("USE:",["X_EVCNAME","X_GROUPNAME"],index=1)
+    EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf[used_scheme].values))
     choice_EVC = st.radio("choose EVC",set(EVC_name_dict.values()),index=2)
-    choice_df_index = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC].index
-
-
-
-
-    ecoterns,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict)
+    choice_df_index = Bendigodf[Bendigodf[used_scheme]==choice_EVC].index
+    choice_Plot = st.radio("choose plots",["All the EVCs togethor","Selected EVC","Queried Ecotern","Network of Neighbouring EVCs","Queried Ecoterns+Selected EVC"],index=1)
+    ecoterns,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
     
     #temp = adjacency_dict[number_choice]
     #st.write(adjacency_dict)
-    slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC)
+    slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC,choice_Plot,used_scheme)
 
     #compute_adjacency(Bendigodf)
 
 
-def slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC):
+def slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC,choice_Plot,used_scheme):
+    Bendigodf = Bendigodf.to_crs(epsg=4326)
+
     ecoterns = list(ecoterns)
-    col1, col2 = st.columns(2)
-
-    col1.subheader("All the EVCs")
-    col2.subheader("Selected EVC")
-    with col1:
-        Bendigodf.plot(column="X_GROUPNAME",figsize=(5, 5), legend=True)#, legend_kwds={"orientation": "horizontal"},)
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='lower center')
-        st.pyplot()
-    with col2:
-        filtered_Bendigodf = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC]
-        filtered_Bendigodf.plot(column="X_GROUPNAME",figsize=(5, 5), legend=True)
-        st.pyplot()
-
-    col1, col2 = st.columns(2)
-    col1.subheader("Just Ecotern")
-    col2.subheader("Selected EVC")
-
-    #st.write(adjacencies)
-    #st.write(Bendigodf.index.isin(adjacencies))
     filtered_eco_tern = Bendigodf[Bendigodf.index.isin(adjacencies)]
+    SingleEVC = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
+    if choice_Plot == "All the EVCs togethor":
+        st.subheader("All the EVCs")
+        #fig, ax = plt.subplots(1, figsize=(5,5))
 
-    #st.write(len(filtered_eco_tern))
-    #st.write(filtered_eco_tern)
-    SingleEVC = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC]
+        #Bendigodf.plot(column=used_scheme,figsize=(5, 5))#, legend=True, legend_kwds={'loc': 'lower center','fontsize':'xx-small'})#, legend_kwds={"orientation": "horizontal"},)
 
-    with col1:
+        #pos = ax.get_position()
+        #ax.set_position([pos.x0, pos.y0, pos.width * 0.9, pos.height])
+        #ax.legend(loc='center right', bbox_to_anchor=(1.25, 0.5))
+        #st.pyplot()
 
-        #st.write(ecoterns)
-        #st.write(filtered_Bendigodf)
-        #vic_geo[vic_geo["vic_loca_2"].isin(labels)]
-        #filtered_Bendigodf = pd.merge(filtered_Bendigodf, gdfBendigo, on='geometry', how='outer', suffixes=('_df1', '_df2')).fillna(0)
-        filtered_eco_tern.plot(column="X_GROUPNAME",figsize=(5, 5), legend=True)
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='lower center')
+
+        m = Bendigodf.explore(used_scheme)#, cmap="Blues")
+        outfp = r"base_map.html"
+        m.save(outfp)
+        HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
+
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
+        
+        #st.map(m)
+
+    if choice_Plot == "Selected EVC":
+        st.subheader("Selected EVCs")
+
+        filtered_Bendigodf = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
+        #filtered_Bendigodf.plot(column=used_scheme,figsize=(5, 5), legend=True)
+        #plt.legend(fontsize="x-small")
+
+        #st.pyplot()
+
+        #filtered_Bendigodf = filtered_Bendigodf.to_crs(epsg=4326)
+        m = filtered_Bendigodf.explore(used_scheme, cmap="Blues")
+        outfp = r"base_map.html"
+        m.save(outfp)
+        HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
+
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
+
+
+    if choice_Plot == "Queried Ecoterns":
+
+        #filtered_eco_tern.plot(column=used_scheme,figsize=(5, 5), legend=True)
+        #plt.legend(fontsize="x-small")
+
+        #st.pyplot()
+
+        #filtered_eco_tern = filtered_eco_tern.to_crs(epsg=4326)
+        m = filtered_eco_tern.explore(used_scheme, cmap="Blues")
+        outfp = r"base_map.html"
+        m.save(outfp)
+        HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
+
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
+
+
+    if choice_Plot == "Queried Ecoterns+Selected EVC":
+        bothdf = pd.concat([SingleEVC, filtered_eco_tern])#, on='geometry', how='outer', suffixes=('_df1', '_df2')).fillna(0)
+        #bothdf.plot(column=used_scheme,figsize=(5, 5), legend=True)
+        #plt.legend(fontsize="x-small")
 
         st.pyplot()
+        m = bothdf.explore(used_scheme, cmap="Blues")
+        outfp = r"base_map.html"
+        m.save(outfp)
+        HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
 
-    with col2:
-        #filtered_Bendigodf = pd.merge(filtered_Bendigodf, gdfBendigo, on='geometry', how='outer', suffixes=('_df1', '_df2')).fillna(0)
-        SingleEVC.plot(column="X_GROUPNAME",figsize=(5, 5), legend=True)
-        st.pyplot()
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
 
-    bothdf = pd.concat([SingleEVC, filtered_eco_tern])#, on='geometry', how='outer', suffixes=('_df1', '_df2')).fillna(0)
-
-    bothdf.plot(column="X_GROUPNAME",figsize=(5, 5), legend=True)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='lower center')
-
-    st.pyplot()
-    
-
-def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict):
+def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
     links_ = []
     nodes_ = []
     weight_dict_ = dict()
@@ -202,48 +217,48 @@ def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict):
     nodes = pd.DataFrame(nodes_)
 
     #for number_choice in choice_df_index:
-    
-    ecoterns = set(ecoterns)
-    G = nx.from_pandas_edgelist(links, 'source', 'target', 'value')
-    EVC_net = Network(
-                        height='400px',
-                        width='100%',
-                        bgcolor='#222222',
-                        font_color='white'
-                        )
+    if "Network of Neighbouring EVCs" == choice_Plot:
+        ecoterns = set(ecoterns)
+        G = nx.from_pandas_edgelist(links, 'source', 'target', 'value')
+        EVC_net = Network(
+                            height='400px',
+                            width='100%',
+                            bgcolor='#222222',
+                            font_color='white'
+                            )
 
-    # Take Networkx graph and translate it to a PyVis graph format
-    EVC_net.from_nx(G)
+        # Take Networkx graph and translate it to a PyVis graph format
+        EVC_net.from_nx(G)
 
-    # Generate network with specific layout settings
-    EVC_net.repulsion(
-                        node_distance=420,
-                        central_gravity=0.33,
-                        spring_length=110,
-                        spring_strength=0.10,
-                        damping=0.95
-                        )
+        # Generate network with specific layout settings
+        EVC_net.repulsion(
+                            node_distance=420,
+                            central_gravity=0.33,
+                            spring_length=110,
+                            spring_strength=0.10,
+                            damping=0.95
+                            )
 
-    # Save and read graph as HTML file (on Streamlit Sharing)
-    try:
-        path = os.getcwd()
-        EVC_net.save_graph(f'{path}/pyvis_graph.html')
-        HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
+        # Save and read graph as HTML file (on Streamlit Sharing)
+        try:
+            path = os.getcwd()
+            EVC_net.save_graph(f'{path}/pyvis_graph.html')
+            HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
 
-    # Save and read graph as HTML file (locally)
-    except:
-        path = os.getcwd()
-        EVC_net.save_graph(f'{path}/pyvis_graph.html')
-        HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
+        # Save and read graph as HTML file (locally)
+        except:
+            path = os.getcwd()
+            EVC_net.save_graph(f'{path}/pyvis_graph.html')
+            HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
 
-    # Load HTML file in HTML component for display on Streamlit page
-    components.html(HtmlFile.read(), height=435)
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
 
 
     adjacent_indexs = [v for number_choice in choice_df_index for v in adjacency_dict[number_choice] ]
     #adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
-    print(adjacent_indexs)
-    print(number_choice)
+    #print(adjacent_indexs)
+    #print(number_choice)
     return ecoterns,adjacent_indexs
 
 #url = 'https://raw.githubusercontent.com/plotly/plotly.js/master/test/image/mocks/sankey_energy.json'
@@ -274,6 +289,7 @@ def goldfieldslocations():
     labels = ["BENDIGO","STRATHFIELDSAYE","AXE CREEK","AXE DALE","MANDURANG","SEDGWICK","MANDURANG SOUTH","EMU CREEK","EPPALOCK","SPRING GULLY"]
     gdfBendigo = vic_geo[vic_geo["vic_loca_2"].isin(labels)]
     gdfBendigo.plot(column="vic_loca_2",figsize=(6, 6), legend=True)
+    #gdfBendigo.set_ylabel(legendAsLatex(gdfBendigo)) 
     st.pyplot()
 
     return gdfBendigo
@@ -287,8 +303,8 @@ def folium():
     #st.write(filtered_Bendigodf.crs)
 
     filtered_Bendigodf.explore(
-    column="X_GROUPNAME",  # make choropleth based on "BoroName" column
-    tooltip="X_GROUPNAME",  # show "BoroName" value in tooltip (on hover)
+    column=used_scheme,  # make choropleth based on "BoroName" column
+    tooltip=used_scheme,  # show "BoroName" value in tooltip (on hover)
     popup=True,  # show all values in popup (on click)
     tiles="CartoDB positron",  # use "CartoDB positron" tiles
     cmap="Set1",  # use "Set1" matplotlib colormap
@@ -454,7 +470,7 @@ def cruft():
     #st.altair_chart(chart)
     """
     #vic_inc_map = folium.Map([-36.7569, 144.2786], zoom_start=5, tiles='CartoDB positron')
-    #temp_json = Bendigodf[Bendigodf["X_GROUPNAME"]==choice_EVC].to_json()
+    #temp_json = Bendigodf[Bendigodf[used_scheme]==choice_EVC].to_json()
 
     st.write(filtered_Bendigodf)
     #plt.show()
@@ -465,7 +481,7 @@ def cruft():
         geo_j = sim_geo.to_json()
         print(geo_j)
         geo_j = folium.GeoJson(data=geo_j, style_function=lambda x: {"fillColor": "orange"})
-        folium.Popup(r["X_GROUPNAME"]).add_to(geo_j)
+        folium.Popup(r[used_scheme]).add_to(geo_j)
         geo_j.add_to(vic_inc_map)
 
         #for _, r in df.iterrows():
@@ -506,7 +522,7 @@ def cruft():
     #     style_function=style_function, 
     #     control=False,
     #     tooltip=folium.features.GeoJsonTooltip(
-    #         fields=['X_GROUPNAME'],
+    #         fields=['X_EVCNAME'],
     #         aliases=['EVC'],
     #         style=("background-color: white; color: #333333; font-family: arial; font-size: 12px; padding: 10px;") 
     #     )
