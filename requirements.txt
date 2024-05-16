@@ -12,3 +12,4 @@ pyvis==0.3.2
 scipy==1.13.0
 streamlit==1.33.0
 streamlit_folium==0.20.0
+mapclassify==2.6.1
