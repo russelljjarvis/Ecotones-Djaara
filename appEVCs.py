@@ -167,20 +167,20 @@ def main():
         </style>
         """,
         unsafe_allow_html=True)
-        col = st.columns(2, gap='medium')
+        #col = st.columns(2, gap='medium')
         big_list = set(EVC_name_dict.values())
-        with col[0]:
-            st.write('Select')
-            choice_EVC = st.radio('Scrollable EVC Select', big_list, label_visibility='collapsed',index=0, key='rb_1')
+        #with col[0]:
+        st.write('Select')
+        choice_EVC = st.radio('Scrollable EVC Select', big_list, label_visibility='collapsed',index=0, key='rb_1')
 
-        with col[1]:
-            st.text_input('Value selected', key='ti_1')
+        #ith col[1]:
+        #    st.text_input('Value selected', key='ti_1')
         #st.write(set(EVC_name_dict.values()))
         
     #choice_EVC = st.radio("choose EVC",,index=0)
     choice_df_index = Bendigodf[Bendigodf[used_scheme]==choice_EVC].index
     with col4:
-        choice_Plot = st.radio("Choose Plot Type",["Municipilities","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Queried Ecotern","Network of Neighbouring EVCs","Static Network of Neighbours","Queried Ecoterns+Selected EVC"],index=2)
+        choice_Plot = st.radio("Choose Plot Type",["All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Queried Ecotern","Network of Neighbouring EVCs","Static Network of Neighbours","Queried Ecoterns+Selected EVC","Municipilities of Bendigo"],index=2)
     ecotones,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
     if choice_Plot=="Static Network of Neighbours":
         temp = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
@@ -201,10 +201,10 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
 
     if choice_Plot == "EVC Relative Area Pie Chart":
 
-        height_ = 450
+        height_ = 600
 
 
-        st.header("Cluttered Chart of EVCs")
+        st.header("Chart of All EVCs (Cluttered)")
         fig = px.pie(Bendigodf, values='AREASQM', names=used_scheme, title="Metres Square Area  SQM of each EVC",)
         fig.update_layout(height=height_)
         st.plotly_chart(fig, theme=None, use_container_width = True,height=height_)
@@ -244,7 +244,7 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
         components.html(HtmlFile.read(), height=435)
         
 
-    if choice_Plot == "Municipilities":
+    if choice_Plot == "Municipilities of Bendigo":
         gdfBendigo = goldfieldslocations()
         m = gdfBendigo.explore("vic_loca_2")
         outfp = r"base_map.html"
