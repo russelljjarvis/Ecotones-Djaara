@@ -130,8 +130,8 @@ def main():
         with st.expander("What is a Switch-Ecotone?"):
             st.write('''
                 A switch-ecotone is an area of Victorian forest, that is poorly described by an EVC. 
-                The area in question may be situated between two EVCs, and because the neighbouring EVCs are blending into each other, the area that is between the two ecotones has characteristics common to both 
-                    of the peripheral EVCs, and is therefore a poor fit for the pre-existing EVCs.
+                The area in question may be situated between two or more EVCs, and because the neighbouring EVCs are blending into each other the area that is between the two ecotones has characteristics common to both 
+                of the peripheral EVCs at once. The result of blending two or more switch ecoterns togethor is that they may be a poor fit for the pre-existing EVCs.
             ''')
             st.image("ecotonesSwitchPicture.png")
 
