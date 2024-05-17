@@ -251,13 +251,15 @@ def main():
     origins = Bendigodf[Bendigodf.index.isin(choice_df_index)]    
 
     temp = Bendigodf[Bendigodf.index.isin(adjacent_indexs)]    
-    m = temp.explore(used_scheme)
-    outfp = r"adjacent_indexs.html"
-    m.save(outfp)
-    HtmlFile = open(f'adjacent_indexs.html', 'r', encoding='utf-8')
+    if False:
+    
+        m = temp.explore(used_scheme)
+        outfp = r"adjacent_indexs.html"
+        m.save(outfp)
+        HtmlFile = open(f'adjacent_indexs.html', 'r', encoding='utf-8')
 
-    # Load HTML file in HTML component for display on Streamlit page
-    components.html(HtmlFile.read(), height=435)
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
 
     # #m = folium.Map()#location=[39.949610, -75.150282], zoom_start=16)
 
@@ -405,15 +407,13 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
         components.html(HtmlFile.read(), height=435)
 
 
-    if choice_Plot == "Ecotones+Selected EVC":
         #tab0,tab1 = st.tabs(["proximal","anywhere"])
         #with tab0:
+    if choice_Plot == "Ecotones+Selected EVC":
 
         bothdf = pd.concat([SingleEVC, filtered_eco_tern])#, on='geometry', how='outer', suffixes=('_df1', '_df2')).fillna(0)
-        
         outfp = r"base_map.html"
-        m = bothdf.explore(used_scheme)
-        
+        m = bothdf.explore(used_scheme)        
         m.save(outfp)
         HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
         # Load HTML file in HTML component for display on Streamlit page
