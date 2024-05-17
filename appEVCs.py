@@ -14,11 +14,12 @@ import os
 from matplotlib import pyplot as plt
 from scipy.spatial import voronoi_plot_2d
 from geo_adjacency.adjacency import AdjacencyEngine
-import osmnx as ox
-from pyproj import Transformer
+#import osmnx as ox
+#from pyproj import Transformer
 import folium
-from folium.plugins import Draw
+#from folium.plugins import Draw
 import geopandas
+import copy
 #import seaborn as sns
 from streamlit_folium import st_folium
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -109,7 +110,7 @@ def renewed(source,Bendigodf):
 
 def main():
     Bendigodf = Load_EVC_DF()
-
+    Bendigodf_ = copy.copy(Bendigodf)
     #with st.expander("What is This Dashboard About?"):
 
     Bendigodf.reset_index(inplace=True)
@@ -224,12 +225,13 @@ def main():
 
             st.success("Finished")                
         total_df.explore(used_scheme)
+        adjacency_dict = output
     if choice_Plot=="Static Network of Neighbours":
         temp = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
         compute_adjacency(temp)
     #temp = adjacency_dict[number_choice]
     #st.write(adjacency_dict)
-    choice_df_index = Bendigodf[Bendigodf[used_scheme]==choice_EVC].index
+    choice_df_index = Bendigodf_[Bendigodf_[used_scheme]==choice_EVC].index
 
     ecotones = get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
 
@@ -322,11 +324,8 @@ def whole_population_render(Bendigodf,used_scheme):
     components.html(HtmlFile.read(), height=435)
 
 def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_scheme):
-
     ecotones = list(ecotones)
     filtered_eco_tern = Bendigodf[Bendigodf[used_scheme].isin(ecotones)]
-
-
     filtered_eco_tern_close = Bendigodf[Bendigodf.index.isin(adjacencies)]
 
     SingleEVC = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
@@ -484,6 +483,12 @@ def get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Pl
             #print(colors[ind])
             node["group"] = ind
             node["color"] = ind
+
+        for ind,e in enumerate(EVC_net.edges):
+            e["value"] = weight_dict_[ind]
+            #    src = e[0]
+            #    dst = e[1]
+            #    w = e[2]            
         # Generate network with specific layout settings
         EVC_net.repulsion(
                             node_distance=420,
@@ -495,16 +500,9 @@ def get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Pl
         #viridis = cm.get_cmap('viridis', len(EVC_net.nodes))
         #colors = cm.rainbow(np.linspace(0, 1, len(EVC_net.nodes)))
         # Save and read graph as HTML file (on Streamlit Sharing)
-        try:
-            path = os.getcwd()
-            EVC_net.save_graph(f'{path}/pyvis_graph.html')
-            HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
-
-        # Save and read graph as HTML file (locally)
-        except:
-            path = os.getcwd()
-            EVC_net.save_graph(f'{path}/pyvis_graph.html')
-            HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
+        path = os.getcwd()
+        EVC_net.save_graph(f'/pyvis_graph.html')
+        HtmlFile = open(f'/pyvis_graph.html', 'r', encoding='utf-8')
 
         # Load HTML file in HTML component for display on Streamlit page
 
