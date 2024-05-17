@@ -484,8 +484,8 @@ def get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Pl
             node["group"] = ind
             node["color"] = ind
 
-        for ind,e in enumerate(EVC_net.edges):
-            e["value"] = weight_dict_[ind]
+        #for ind,e in enumerate(EVC_net.edges):
+        #    e["value"] = weight_dict_[ind]
             #    src = e[0]
             #    dst = e[1]
             #    w = e[2]            
@@ -501,8 +501,8 @@ def get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Pl
         #colors = cm.rainbow(np.linspace(0, 1, len(EVC_net.nodes)))
         # Save and read graph as HTML file (on Streamlit Sharing)
         path = os.getcwd()
-        EVC_net.save_graph(f'/pyvis_graph.html')
-        HtmlFile = open(f'/pyvis_graph.html', 'r', encoding='utf-8')
+        EVC_net.save_graph(f'pyvis_graph.html')
+        HtmlFile = open(f'pyvis_graph.html', 'r', encoding='utf-8')
 
         # Load HTML file in HTML component for display on Streamlit page
 
