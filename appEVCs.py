@@ -106,7 +106,7 @@ def main():
     #with st.expander("What is This Dashboard About?"):
 
  
-    Bendigodf.drop(columns=["EVC_MUT","EVC_CODE","SCALE","EVC_BCS","EVC_GP","EVC_GO","EVC_GO_DESC","BIOEVC","EVC_BCS_DESC","EVC_SUBGP"],inplace=True)
+    Bendigodf.drop(columns=["EVC_MUT","EVC_CODE","SCALE","EVC_BCS","EVC_GP","EVC_GO","EVC_GO_DESC","BIOEVC","EVC_BCS_DESC","EVC_BCS_SRC","EVC_SUBGP","BIOREGION","BIOREGION_CODE","VEG_CODE","BIOREGION_NO"],inplace=True)
     #Bendigodf.drop("")
 
     adjacency_dict,EVC_name_dict,named_connectome,links = source_data()
@@ -143,7 +143,7 @@ def main():
     with col2:
 
         
-        used_scheme = st.radio("USE Description:",["Short EVC Description","Long EVC Description (higher specificity of Bioregion)"],index=0)
+        used_scheme = st.radio("Selection Descriptor:",["Short EVC Description","Long EVC Description (higher specificity of Bioregion)"],index=0)
 
         if used_scheme == "Long EVC Description (higher specificity of Bioregion)":
             used_scheme = "X_EVCNAME"
@@ -170,7 +170,6 @@ def main():
         #col = st.columns(2, gap='medium')
         big_list = set(EVC_name_dict.values())
         #with col[0]:
-        st.write('Select')
         choice_EVC = st.radio('Scrollable EVC Select', big_list, label_visibility='collapsed',index=0, key='rb_1')
 
         #ith col[1]:
@@ -180,7 +179,8 @@ def main():
     #choice_EVC = st.radio("choose EVC",,index=0)
     choice_df_index = Bendigodf[Bendigodf[used_scheme]==choice_EVC].index
     with col4:
-        choice_Plot = st.radio("Choose Plot Type",["All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Queried Ecotern","Network of Neighbouring EVCs","Static Network of Neighbours","Queried Ecoterns+Selected EVC","Municipilities of Bendigo"],index=2)
+
+        choice_Plot = st.radio("Choose Plot Type",["All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotern","Network of Neighbouring EVCs","Static Network of Neighbours","Ecoterns+Selected EVC","Municipilities of Bendigo"],index=1)
     ecotones,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
     if choice_Plot=="Static Network of Neighbours":
         temp = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
@@ -190,7 +190,18 @@ def main():
     slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_scheme)
 
     #compute_adjacency(Bendigodf)
+#@st.cache_data
+def whole_population_render(Bendigodf,used_scheme):
+    if os.path.isfile("fully_populated_map_evcs.html"):
+        HtmlFile = open(f'fully_populated_map_evcs.html', 'r', encoding='utf-8')
+    else:
+        m = Bendigodf.explore(used_scheme)#, cmap="Blues")
+        outfp = r"fully_populated_map_evcs.html"
+        m.save(outfp)
+        HtmlFile = open(f'fully_populated_map_evcs.html', 'r', encoding='utf-8')
 
+    # Load HTML file in HTML component for display on Streamlit page
+    components.html(HtmlFile.read(), height=435)
 
 def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_scheme):
     Bendigodf = Bendigodf.to_crs(epsg=4326)
@@ -224,25 +235,7 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
 
     if choice_Plot == "All the EVCs togethor":
         st.subheader("All the EVCs")
-
-        #fig, ax = plt.subplots(1, figsize=(5,5))
-
-        #Bendigodf.plot(column=used_scheme,figsize=(5, 5))#, legend=True, legend_kwds={'loc': 'lower center','fontsize':'xx-small'})#, legend_kwds={"orientation": "horizontal"},)
-
-        #pos = ax.get_position()
-        #ax.set_position([pos.x0, pos.y0, pos.width * 0.9, pos.height])
-        #ax.legend(loc='center right', bbox_to_anchor=(1.25, 0.5))
-        #st.pyplot()
-
-
-        m = Bendigodf.explore(used_scheme)#, cmap="Blues")
-        outfp = r"base_map.html"
-        m.save(outfp)
-        HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
-
-        # Load HTML file in HTML component for display on Streamlit page
-        components.html(HtmlFile.read(), height=435)
-        
+        whole_population_render(Bendigodf,used_scheme)
 
     if choice_Plot == "Municipilities of Bendigo":
         gdfBendigo = goldfieldslocations()
