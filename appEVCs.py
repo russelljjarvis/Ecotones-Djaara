@@ -65,7 +65,7 @@ def compute_adjacency(Bendigodf):
 
     return adjacency_dict,engine
 
-st.header("Ecoterms and EVCS of North Central Catchment Region/Gold Fields")
+st.header("Ecological Vegetation Classes (EVCs) of the Gold Fields Forest")
 
 #@st.cache_data
 def source_data():
