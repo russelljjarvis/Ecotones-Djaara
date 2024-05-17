@@ -14,6 +14,13 @@ import os
 from matplotlib import pyplot as plt
 from scipy.spatial import voronoi_plot_2d
 from geo_adjacency.adjacency import AdjacencyEngine
+import osmnx as ox
+from pyproj import Transformer
+import folium
+from folium.plugins import Draw
+import geopandas
+#import seaborn as sns
+from streamlit_folium import st_folium
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.set_page_config(layout="wide")
 import plotly.express as px
@@ -105,12 +112,14 @@ def main():
 
     #with st.expander("What is This Dashboard About?"):
 
- 
+    Bendigodf.reset_index(inplace=True)
+
     Bendigodf.drop(columns=["EVC_MUT","EVC_CODE","SCALE","EVC_BCS","EVC_GP","EVC_GO","EVC_GO_DESC","BIOEVC","EVC_BCS_DESC","EVC_BCS_SRC","EVC_SUBGP","BIOREGION","BIOREGION_CODE","VEG_CODE","BIOREGION_NO"],inplace=True)
     #Bendigodf.drop("")
+    Bendigodf = Bendigodf.to_crs(epsg=4326)
 
     adjacency_dict,EVC_name_dict,named_connectome,links = source_data()
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
         with st.expander("What is a Plant Community?"):
             st.write('''
@@ -127,11 +136,11 @@ def main():
             ''')
             st.image("for_website_EVC.png")
 
-        with st.expander("What is a Switch-Ecotone?"):
+        with st.expander("What is a Ecotone?"):
             st.write('''
-                A switch-ecotone is an area of Victorian forest, that is poorly described by an EVC. 
+                An ecotone is an area of Victorian forest, that is poorly described by an EVC. 
                 The area in question may be situated between two or more EVCs, and because the neighbouring EVCs are blending into each other the area that is between the two ecotones has characteristics common to both 
-                of the peripheral EVCs at once. The result of blending two or more switch ecoterns togethor is that they may be a poor fit for the pre-existing EVCs.
+                of the peripheral EVCs at once. The result of blending two or more switch ecotones togethor is that they may be a poor fit for the pre-existing EVCs.
             ''')
             st.image("ecotonesSwitchPicture.png")
 
@@ -139,7 +148,20 @@ def main():
             st.write('''
             The motivation for this dashboard is to algorithmically iterate over all combinations of neighbouring EVCs, and for each EVC to ask what are the EVCs possible neighbours?
                     For each possible pairs of EVC neighbours there can be an abstract Switch-Ecotones, and the locations of these Switch-Ecotones can be plotted on a map. 
+                    To make this dashboard, I downloaded the data file gda2020_vicgrid EVCs from 2020 for all of Victoria, from the Victorians government open data portal. It contains the file "FLORAFAUNA1.gdb" which is readable by Geopandas in Python.
             ''')
+
+        with st.expander("About Me:"):
+            st.markdown('''
+            Russell Jarvis (he/him) PhD
+            I respectfully acknowledge the Traditional Owners of the land on which we work and learn, and pay respect to the First Nations Peoples and their elders, past, present and future.
+            [linkedin](https://www.linkedin.com/in/russell-jarvis-jarrod/)
+            [github](https://github.com/russelljjarvis)
+            [email](russelljarvis42@gmail.com)                        
+            [The Code For This](https://github.com/russelljjarvis/NatureStewards/blob/main/appEVCs.py)
+            [Personal Website]()
+            ''')
+
     with col2:
 
         
@@ -153,8 +175,8 @@ def main():
             used_scheme = "X_GROUPNAME"
 
 
-    EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf[used_scheme].values))
-    with col3:
+        EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf[used_scheme].values))
+        #with col3:
 
 
         # Add vertical scroll for radio.
@@ -170,25 +192,121 @@ def main():
         #col = st.columns(2, gap='medium')
         big_list = set(EVC_name_dict.values())
         #with col[0]:
-        choice_EVC = st.radio('Scrollable EVC Select', big_list, label_visibility='collapsed',index=0, key='rb_1')
+        choice_EVC = st.radio('Scrollable EVC Select', big_list, label_visibility='collapsed',index=1, key='rb_1')
 
         #ith col[1]:
         #    st.text_input('Value selected', key='ti_1')
         #st.write(set(EVC_name_dict.values()))
         
     #choice_EVC = st.radio("choose EVC",,index=0)
-    choice_df_index = Bendigodf[Bendigodf[used_scheme]==choice_EVC].index
-    with col4:
+    with col3:
 
-        choice_Plot = st.radio("Choose Plot Type",["All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotern","Network of Neighbouring EVCs","Static Network of Neighbours","Ecoterns+Selected EVC","Municipilities of Bendigo"],index=1)
-    ecotones,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
+        choice_Plot = st.radio("Choose Plot Type",["Ecotones+Selected EVC","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotone","Network of Neighbouring EVCs","Static Network of Neighbours","Municipilities of Bendigo","Re-Hashed"],index=0)
+    if choice_Plot=="Re-Hashed":
+        Bendigodf.reset_index(inplace=True)
+
+        source_geometries = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
+        #source_geometries.reset_index(inplace=True)
+        target_geometries = Bendigodf.geometry
+        target_geometries_ = Bendigodf
+        with st.spinner('Wait for it...'):
+            engine = AdjacencyEngine(source_geometries.geometry, target_geometries.values)
+            output = engine.get_adjacency_dict()
+            total_df = geopandas.GeoDataFrame(columns=Bendigodf.columns)#, geometry='feature')#, crs='EPSG:4326')
+
+            for source_i, target_i_list in output.items():                
+                source_geom =  source_geometries[source_geometries.index==source_i]
+                total_df = pd.concat([total_df,source_geom])
+
+                dests = target_geometries_[target_geometries_.index.isin(target_i_list)]    
+
+                total_df = pd.concat([total_df,dests])
+
+            st.success("Finished")                
+        total_df.explore(used_scheme)
     if choice_Plot=="Static Network of Neighbours":
         temp = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
         compute_adjacency(temp)
     #temp = adjacency_dict[number_choice]
     #st.write(adjacency_dict)
-    slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_scheme)
+    choice_df_index = Bendigodf[Bendigodf[used_scheme]==choice_EVC].index
 
+    ecotones = get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
+
+    #for k,v in adjacency_dict.items():
+    #    if len(v)!=0:
+    #        print(choice_df_index)
+    targets_locations = []
+    for i in choice_df_index:
+        if len(adjacency_dict[i]) !=0:
+            targets_locations.extend(adjacency_dict[i]) 
+    adjacent_indexs = targets_locations    
+    adjacent_indexs.extend(choice_df_index)
+
+    st.header("Ecotones of: {0}".format(choice_EVC))
+
+    dests = Bendigodf[Bendigodf.index.isin(adjacent_indexs)]    
+    origins = Bendigodf[Bendigodf.index.isin(choice_df_index)]    
+
+    temp = Bendigodf[Bendigodf.index.isin(adjacent_indexs)]    
+    m = temp.explore(used_scheme)
+    outfp = r"adjacent_indexs.html"
+    m.save(outfp)
+    HtmlFile = open(f'adjacent_indexs.html', 'r', encoding='utf-8')
+
+    # Load HTML file in HTML component for display on Streamlit page
+    components.html(HtmlFile.read(), height=435)
+
+    # #m = folium.Map()#location=[39.949610, -75.150282], zoom_start=16)
+
+
+    # # call to render Folium map in Streamlit
+    # st_data = st_folium(m, width=725)
+    # transformer = Transformer.from_crs("epsg:2154", "epsg:4326")
+    # for origin,dest in zip(origins["geometry"],dests["geometry"]):
+    #     latlong_origin = list(transformer.transform(origin.centroid.x, origin.centroid.y))
+    #     latlong_destination = list(transformer.transform(dest.centroid.x, dest.centroid.y))
+    #     #for origin_, destination in zip(latlong_origin, latlong_destination):
+    #     #    st.write(origin_)
+    #     folium.CircleMarker([latlong_origin[0], latlong_origin[1]],
+    #                         radius=15,
+    #                         fill_color="#3db7e4", # divvy color
+    #                     ).add_to(m)
+    #     folium.Marker(
+    #         [39.949610, -75.150282], popup="Liberty Bell", tooltip="Liberty Bell"
+    #     ).add_to(m)
+    #     folium.CircleMarker([latlong_destination[0], latlong_destination[1]],
+    #                         radius=15,
+    #                         fill_color="red", # divvy color
+    #                     ).add_to(m)
+
+    #     folium.PolyLine([[latlong_origin[0], latlong_origin[1]], 
+    #                     [latlong_destination[0], latlong_destination[1]]]).add_to(m)
+    # #m
+    # #folium.LayerControl().add_to(m)
+
+    # #Draw(export=True).add_to(m)
+    # #st_data = st_folium(m, width=725)
+    
+    #print(targets_locations)
+    #import pdb
+    #pdb.set_trace()
+
+
+    #adjacent_indexs = [v for number_choice in choice_df_index for v in adjacency_dict[number_choice] ]
+    #adjacent_indexs.extend(choice_df_index)
+
+    slow_do_last(Bendigodf,ecotones,adjacent_indexs,choice_EVC,choice_Plot,used_scheme)
+# def venn_diagram():
+#     import pylab as plt
+#     from matplotlib_venn import venn3, venn3_circles
+
+#     v = venn3(subsets=(1,1,0,1,0,0,0))
+#     v.get_label_by_id('100').set_text('First')
+#     v.get_label_by_id('010').set_text('Second')
+#     v.get_label_by_id('001').set_text('Third')
+#     plt.title("Not a Venn diagram")
+#     plt.show() 
     #compute_adjacency(Bendigodf)
 #@st.cache_data
 def whole_population_render(Bendigodf,used_scheme):
@@ -204,10 +322,13 @@ def whole_population_render(Bendigodf,used_scheme):
     components.html(HtmlFile.read(), height=435)
 
 def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_scheme):
-    Bendigodf = Bendigodf.to_crs(epsg=4326)
 
     ecotones = list(ecotones)
-    filtered_eco_tern = Bendigodf[Bendigodf.index.isin(adjacencies)]
+    filtered_eco_tern = Bendigodf[Bendigodf[used_scheme].isin(ecotones)]
+
+
+    filtered_eco_tern_close = Bendigodf[Bendigodf.index.isin(adjacencies)]
+
     SingleEVC = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
 
     if choice_Plot == "EVC Relative Area Pie Chart":
@@ -270,16 +391,14 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
         components.html(HtmlFile.read(), height=435)
 
 
-    if choice_Plot == "Queried Ecoterns":
+    if choice_Plot == "Ecotone":
 
-        #filtered_eco_tern.plot(column=used_scheme,figsize=(5, 5), legend=True)
-        #plt.legend(fontsize="x-small")
-
-        #st.pyplot()
 
         #filtered_eco_tern = filtered_eco_tern.to_crs(epsg=4326)
-        m = filtered_eco_tern.explore(used_scheme)
+        m = filtered_eco_tern_close.explore(used_scheme)
         outfp = r"base_map.html"
+
+
         m.save(outfp)
         HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
 
@@ -287,140 +406,84 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
         components.html(HtmlFile.read(), height=435)
 
 
-    if choice_Plot == "Queried Ecoterns+Selected EVC":
+    if choice_Plot == "Ecotones+Selected EVC":
+        #tab0,tab1 = st.tabs(["proximal","anywhere"])
+        #with tab0:
+
         bothdf = pd.concat([SingleEVC, filtered_eco_tern])#, on='geometry', how='outer', suffixes=('_df1', '_df2')).fillna(0)
-        m = bothdf.explore(used_scheme)
+        
         outfp = r"base_map.html"
+        m = bothdf.explore(used_scheme)
+        
         m.save(outfp)
         HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
-
         # Load HTML file in HTML component for display on Streamlit page
+        st.title("Ecotones of: {0}".format(choice_EVC))
         components.html(HtmlFile.read(), height=435)
 #from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 #import matplotlib.cm as cm
 
 
-def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
-    #def dumb2():
+#def dontdoagain():
+def get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
     links_ = []
     nodes_ = []
     weight_dict_ = dict()
     cnt = 0
     #st.write(choice_df_index)
 
-    for number_choice in choice_df_index:
-        for v in adjacency_dict[number_choice]:
-            keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
+    for src in choice_df_index: #indexs of the geopandas geometries corresponding to the choice of EVC
+        for tgt in adjacency_dict[src]:
+            keyd = str(set([EVC_name_dict[src],EVC_name_dict[tgt]]))
             if keyd not in weight_dict_.keys():
                 weight_dict_[keyd] = 1
             else:
-                weight_dict_[keyd]+=1
+                weight_dict_[keyd] += 1
 
-
+    #st.write(weight_dict_.keys())
     category_weight_dict_= dict()
     for (ind,k) in enumerate(weight_dict_.keys()):
         category_weight_dict_[k] = ind
 
     ecotones = []
 
-    for number_choice in choice_df_index:
-        for v in adjacency_dict[number_choice]:
-            keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
-            links_.append({"source":EVC_name_dict[number_choice],"target":EVC_name_dict[v],"value":weight_dict_[keyd]})
-            nodes_.append({"index":cnt, "group":category_weight_dict_[keyd], "name":EVC_name_dict[number_choice]})
-            ecotones.append(EVC_name_dict[number_choice])
+    for src in choice_df_index:
+        for tgt in adjacency_dict[src]:
+            keyd = str(set([EVC_name_dict[src],EVC_name_dict[tgt]]))
+            
+            links_.append({"source":EVC_name_dict[src],"target":EVC_name_dict[tgt],"value":weight_dict_[keyd]})
+            nodes_.append({"index":cnt, "group":category_weight_dict_[keyd], "name":EVC_name_dict[src]})
+            ecotones.append(EVC_name_dict[src])
             cnt+=1
 
     links = pd.DataFrame(links_)
     nodes = pd.DataFrame(nodes_)
     ecotones = set(ecotones)
 
+    if "Network of Neighbouring EVCs" == choice_Plot and len(links)==0:
+        st.error("Sorry No Ecoterns Found for that EVC")
 
     #for number_choice in choice_df_index:
-    if "Network of Neighbouring EVCs" == choice_Plot:
-        def dumb():
-            sources = []
-            targets = []
-            weights_ = []
-            weights = {}
-            for src,v in adjacency_dict.items():
-                for tgt in v:
-                    weights[tgt] = 0
+    if "Network of Neighbouring EVCs" == choice_Plot and len(links)!=0:
 
-            for src,v in adjacency_dict.items():
-                for tgt in v:
-                    weights[tgt] += 1
-
-
-            for src,v in adjacency_dict.items():
-                for tgt in v:
-                    sources.append(src)
-                    targets.append(tgt)
-                    weights_.append(weights[tgt])
-        
-
-        new_adjacency_dict = dict()
-
-        for number_choice in choice_df_index:
-            #for v in adjacency_dict[number_choice]
-            if len(adjacency_dict[number_choice]) != 0:
-                new_adjacency_dict[number_choice] = adjacency_dict[number_choice]
-        #import pdb
-        #pdb.set_trace()
-        H = nx.Graph(new_adjacency_dict) 
-
-
+        G = nx.from_pandas_edgelist(links, 'source', 'target', 'value')
         EVC_net = Network(
-                    height='400px',
-                    width='100%',
-                    bgcolor='#222222',
-                    font_color='white'
-                    )
+                            height='400px',
+                            width='100%',
+                            bgcolor='#222222',
+                            font_color='white'
+                            )
 
-        EVC_net.from_nx(H)
+        EVC_net.from_nx(G)
+
+        neighbor_map = EVC_net.get_adj_list()
         for ind,node in enumerate(EVC_net.nodes):
             #node["id"] = ind
-            node["title"] = str(EVC_name_dict[ind])
-        
-        #EVC_net =Network.from_nx(H)
-
-        #st.write(sources,targets)
-        #G = pyvis.Network.barnes_hut()
-        #EVC_net = Network()
-        #EVC_net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white")
-        def dumb3():
-
-            edge_data = zip(sources, targets, weights)
-            #st.write(edge_data)
-            for e in edge_data:
-                src = e[0]
-                dst = e[1]
-                w = e[2]
-
-                EVC_net.add_node(src, src, title=src)
-                EVC_net.add_node(dst, dst, title=dst)
-                EVC_net.add_edge(src, dst, value=w)
-
-        #st.write(len(EVC_net.nodes))
-        #G = nx.from_pandas_edgelist(links, 'source', 'target', 'value')
-        #EVC_net = Network(
-        #                    height='400px',
-        #                    width='100%',
-        #                    bgcolor='#222222',
-        #                    font_color='white'
-        #                    )
-
-
-        #neighbor_map = EVC_net.get_adj_list()
-        
-        
-        #for ind,node in enumerate(EVC_net.nodes):
-            #node["id"] = ind
             #node["title"] += " Neighbors:<br>" + "<br>".join(neighbor_map[node["id"]])
-        #    node["value"] = len(neighbor_map[node["id"]])
+            node["value"] = len(neighbor_map[node["id"]])
             #print(colors[ind])
-        #    node["group"] = ind
-        #    node["color"] = ind
+            node["group"] = ind
+            node["color"] = ind
         # Generate network with specific layout settings
         EVC_net.repulsion(
                             node_distance=420,
@@ -432,15 +495,16 @@ def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
         #viridis = cm.get_cmap('viridis', len(EVC_net.nodes))
         #colors = cm.rainbow(np.linspace(0, 1, len(EVC_net.nodes)))
         # Save and read graph as HTML file (on Streamlit Sharing)
-
-        #EVC_net.show("gameofthrones.html")
-        EVC_net.save_graph(f'pyvis_graph.html')
-
-        HtmlFile = open(f'pyvis_graph.html', 'r', encoding='utf-8')
+        try:
+            path = os.getcwd()
+            EVC_net.save_graph(f'{path}/pyvis_graph.html')
+            HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
 
         # Save and read graph as HTML file (locally)
-            #EVC_net.save_graph(f'{path}/pyvis_graph.html')
-            #HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
+        except:
+            path = os.getcwd()
+            EVC_net.save_graph(f'{path}/pyvis_graph.html')
+            HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
 
         # Load HTML file in HTML component for display on Streamlit page
 
@@ -448,102 +512,15 @@ def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
         components.html(HtmlFile.read(), height=635)
 
 
-    adjacent_indexs = [v for number_choice in choice_df_index for v in adjacency_dict[number_choice] ]
+    #st.write(len(adjacent_indexs))
+    #st.write(len(ecotones))
+    #st.write(ecotones)
+    #components.html(HtmlFile.read(), height=635)
+
     #adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
     #print(adjacent_indexs)
     #print(number_choice)
-    return ecotones,adjacent_indexs
-
-def dontdoagain():
-    def get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
-        links_ = []
-        nodes_ = []
-        weight_dict_ = dict()
-        cnt = 0
-        #st.write(choice_df_index)
-
-        for number_choice in choice_df_index:
-            for v in adjacency_dict[number_choice]:
-                keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
-                if keyd not in weight_dict_.keys():
-                    weight_dict_[keyd] = 1
-                else:
-                    weight_dict_[keyd]+=1
-
-
-        category_weight_dict_= dict()
-        for (ind,k) in enumerate(weight_dict_.keys()):
-            category_weight_dict_[k] = ind
-
-        ecotones = []
-
-        for number_choice in choice_df_index:
-            for v in adjacency_dict[number_choice]:
-                keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
-                links_.append({"source":EVC_name_dict[number_choice],"target":EVC_name_dict[v],"value":weight_dict_[keyd]})
-                nodes_.append({"index":cnt, "group":category_weight_dict_[keyd], "name":EVC_name_dict[number_choice]})
-                ecotones.append(EVC_name_dict[number_choice])
-                cnt+=1
-
-        links = pd.DataFrame(links_)
-        nodes = pd.DataFrame(nodes_)
-        ecotones = set(ecotones)
-
-
-        #for number_choice in choice_df_index:
-        if "Network of Neighbouring EVCs" == choice_Plot:
-
-            G = nx.from_pandas_edgelist(links, 'source', 'target', 'value')
-            EVC_net = Network(
-                                height='400px',
-                                width='100%',
-                                bgcolor='#222222',
-                                font_color='white'
-                                )
-
-            EVC_net.from_nx(G)
-
-            neighbor_map = EVC_net.get_adj_list()
-            for ind,node in enumerate(EVC_net.nodes):
-                #node["id"] = ind
-                #node["title"] += " Neighbors:<br>" + "<br>".join(neighbor_map[node["id"]])
-                node["value"] = len(neighbor_map[node["id"]])
-                #print(colors[ind])
-                node["group"] = ind
-                node["color"] = ind
-            # Generate network with specific layout settings
-            EVC_net.repulsion(
-                                node_distance=420,
-                                central_gravity=0.33,
-                                spring_length=110,
-                                spring_strength=0.10,
-                                damping=0.95
-                                )
-            #viridis = cm.get_cmap('viridis', len(EVC_net.nodes))
-            #colors = cm.rainbow(np.linspace(0, 1, len(EVC_net.nodes)))
-            # Save and read graph as HTML file (on Streamlit Sharing)
-            try:
-                path = os.getcwd()
-                EVC_net.save_graph(f'{path}/pyvis_graph.html')
-                HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
-
-            # Save and read graph as HTML file (locally)
-            except:
-                path = os.getcwd()
-                EVC_net.save_graph(f'{path}/pyvis_graph.html')
-                HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
-
-            # Load HTML file in HTML component for display on Streamlit page
-
-            #c = st.container()
-            components.html(HtmlFile.read(), height=635)
-
-
-        adjacent_indexs = [v for number_choice in choice_df_index for v in adjacency_dict[number_choice] ]
-        #adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
-        #print(adjacent_indexs)
-        #print(number_choice)
-        return ecotones,adjacent_indexs
+    return ecotones
 #url = 'https://raw.githubusercontent.com/plotly/plotly.js/master/test/image/mocks/sankey_energy.json'
 #response = urllib.request.urlopen(url)
 #data = json.loads(response.read())
@@ -801,3 +778,158 @@ def cruft():
     # vic_inc_map.add_child(BioRegionName)
     # vic_inc_map.keep_in_front(BioRegionName)
 
+
+
+def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
+    #def dumb2():
+    links_ = []
+    nodes_ = []
+    weight_dict_ = dict()
+    cnt = 0
+    #st.write(choice_df_index)
+
+    for number_choice in choice_df_index:
+        for v in adjacency_dict[number_choice]:
+            keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
+            if keyd not in weight_dict_.keys():
+                weight_dict_[keyd] = 1
+            else:
+                weight_dict_[keyd]+=1
+
+
+    category_weight_dict_= dict()
+    for (ind,k) in enumerate(weight_dict_.keys()):
+        category_weight_dict_[k] = ind
+
+    ecotones = []
+
+    for number_choice in choice_df_index:
+        for v in adjacency_dict[number_choice]:
+            keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
+            links_.append({"source":EVC_name_dict[number_choice],"target":EVC_name_dict[v],"value":weight_dict_[keyd]})
+            nodes_.append({"index":cnt, "group":category_weight_dict_[keyd], "name":EVC_name_dict[number_choice]})
+            ecotones.append(EVC_name_dict[number_choice])
+            cnt+=1
+
+    links = pd.DataFrame(links_)
+    nodes = pd.DataFrame(nodes_)
+    ecotones = set(ecotones)
+
+
+    #for number_choice in choice_df_index:
+    if "Network of Neighbouring EVCs" == choice_Plot:
+        def dumb():
+            sources = []
+            targets = []
+            weights_ = []
+            weights = {}
+            for src,v in adjacency_dict.items():
+                for tgt in v:
+                    weights[tgt] = 0
+
+            for src,v in adjacency_dict.items():
+                for tgt in v:
+                    weights[tgt] += 1
+
+
+            for src,v in adjacency_dict.items():
+                for tgt in v:
+                    sources.append(src)
+                    targets.append(tgt)
+                    weights_.append(weights[tgt])
+        
+
+        new_adjacency_dict = dict()
+
+        for number_choice in choice_df_index:
+            #for v in adjacency_dict[number_choice]
+            if len(adjacency_dict[number_choice]) != 0:
+                new_adjacency_dict[number_choice] = adjacency_dict[number_choice]
+        #import pdb
+        #pdb.set_trace()
+        H = nx.Graph(new_adjacency_dict) 
+
+
+        EVC_net = Network(
+                    height='400px',
+                    width='100%',
+                    bgcolor='#222222',
+                    font_color='white'
+                    )
+
+        EVC_net.from_nx(H)
+        for ind,node in enumerate(EVC_net.nodes):
+            #node["id"] = ind
+            node["title"] = str(EVC_name_dict[ind])
+        
+        #EVC_net =Network.from_nx(H)
+
+        #st.write(sources,targets)
+        #G = pyvis.Network.barnes_hut()
+        #EVC_net = Network()
+        #EVC_net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white")
+        def dumb3():
+
+            edge_data = zip(sources, targets, weights)
+            #st.write(edge_data)
+            for e in edge_data:
+                src = e[0]
+                dst = e[1]
+                w = e[2]
+
+                EVC_net.add_node(src, src, title=src)
+                EVC_net.add_node(dst, dst, title=dst)
+                EVC_net.add_edge(src, dst, value=w)
+
+        #st.write(len(EVC_net.nodes))
+        #G = nx.from_pandas_edgelist(links, 'source', 'target', 'value')
+        #EVC_net = Network(
+        #                    height='400px',
+        #                    width='100%',
+        #                    bgcolor='#222222',
+        #                    font_color='white'
+        #                    )
+
+
+        #neighbor_map = EVC_net.get_adj_list()
+        
+        
+        #for ind,node in enumerate(EVC_net.nodes):
+            #node["id"] = ind
+            #node["title"] += " Neighbors:<br>" + "<br>".join(neighbor_map[node["id"]])
+        #    node["value"] = len(neighbor_map[node["id"]])
+            #print(colors[ind])
+        #    node["group"] = ind
+        #    node["color"] = ind
+        # Generate network with specific layout settings
+        EVC_net.repulsion(
+                            node_distance=420,
+                            central_gravity=0.33,
+                            spring_length=110,
+                            spring_strength=0.10,
+                            damping=0.95
+                            )
+        #viridis = cm.get_cmap('viridis', len(EVC_net.nodes))
+        #colors = cm.rainbow(np.linspace(0, 1, len(EVC_net.nodes)))
+        # Save and read graph as HTML file (on Streamlit Sharing)
+
+        #EVC_net.show("gameofthrones.html")
+        EVC_net.save_graph(f'pyvis_graph.html')
+
+        HtmlFile = open(f'pyvis_graph.html', 'r', encoding='utf-8')
+
+        # Save and read graph as HTML file (locally)
+            #EVC_net.save_graph(f'{path}/pyvis_graph.html')
+            #HtmlFile = open(f'{path}/pyvis_graph.html', 'r', encoding='utf-8')
+
+        # Load HTML file in HTML component for display on Streamlit page
+
+        #c = st.container()
+        components.html(HtmlFile.read(), height=635)
+
+
+    adjacent_indexs = [v for number_choice in choice_df_index for v in adjacency_dict[number_choice] ]
+    #adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
+    #print(adjacent_indexs)
+    #print(number_choice)
+    return ecotones,adjacent_indexs
