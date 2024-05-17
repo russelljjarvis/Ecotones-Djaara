@@ -109,7 +109,7 @@ def main():
             This is not a formal definition, but a plant community is a group of the same or similar groups of plants that occur in close proximity to each other. 
             When the same group of plants co-occur, they forming an observable re-occuring pattern to observers.
             Plant communities, have membership and structural relationships.
-        ''')"
+        ''')
         st.image("for_website_EVC.png")
 
 
@@ -202,7 +202,7 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
 
 
         st.header("Cluttered Chart of EVCs")
-         fig = px.pie(Bendigodf, values='AREASQM', names=used_scheme, title="Metres Square Area  SQM of each EVC",)
+        fig = px.pie(Bendigodf, values='AREASQM', names=used_scheme, title="Metres Square Area  SQM of each EVC",)
         fig.update_layout(height=height_)
         st.plotly_chart(fig, theme=None, use_container_width = True,height=height_)
 
