@@ -102,6 +102,36 @@ def renewed(source,Bendigodf):
 
 def main():
     Bendigodf = Load_EVC_DF()
+
+
+    with st.expander("What is a Plant Community?"):
+        st.write('''
+            This is not a formal definition, but a plant community is a group of the same or similar groups of plants that occur in close proximity to each other. 
+            When the same group of plants co-occur, they forming an observable re-occuring pattern to observers.
+            Plant communities, have membership and structural relationships.
+        ''')"
+        st.image("for_website_EVC.png")
+
+
+    with st.expander("What is an Ecological Vegetation Class (EVC)?"):
+        st.write('''
+            This is not a formal definition, but an Ecological Vegetation Class (EVC) is a designated area of Victorian forest, which agrees with a particular class of known plant community structure.
+        ''')
+        st.image("for_website_EVC.png")
+
+    with st.expander("What is a Switch-Ecotone?"):
+        st.write('''
+            A switch-ecotone is an area of Victorian forest, that is poorly described by an EVC. 
+            The area in question may be situated between two EVCs, and because the neighbouring EVCs are blending into each other, the area that is between the two ecotones has characteristics common to both 
+                 of the peripheral EVCs, and is therefore a poor fit for the pre-existing EVCs.
+        ''')
+        st.image("ecotonesSwitchPicture.png")
+
+    with st.expander("What is the Motivation for this DashBoard?"):
+        st.write('''
+        The motivation for this dashboard is to algorithmically iterate over all combinations of neighbouring EVCs, and for each EVC to ask what are the EVCs possible neighbours?
+                 For each possible pairs of EVC neighbours there can be an abstract Switch-Ecotones, and the locations of these Switch-Ecotones can be plotted on a map. 
+        ''')
     Bendigodf.drop(columns=["EVC_MUT","EVC_CODE","SCALE","EVC_BCS","EVC_GP","EVC_GO","EVC_GO_DESC","BIOEVC","EVC_BCS_DESC","EVC_SUBGP"],inplace=True)
     #Bendigodf.drop("")
 
@@ -147,36 +177,47 @@ def main():
     #choice_EVC = st.radio("choose EVC",,index=0)
     choice_df_index = Bendigodf[Bendigodf[used_scheme]==choice_EVC].index
     with col3:
-        choice_Plot = st.radio("Choose Plot Type",["Municipilities","All the EVCs togethor","Selected EVC","Pie Chart","Queried Ecotern","Network of Neighbouring EVCs","Static Network of Neighbours","Queried Ecoterns+Selected EVC"],index=2)
-    ecoterns,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
+        choice_Plot = st.radio("Choose Plot Type",["Municipilities","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Queried Ecotern","Network of Neighbouring EVCs","Static Network of Neighbours","Queried Ecoterns+Selected EVC"],index=2)
+    ecotones,adjacencies = get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot)
     if choice_Plot=="Static Network of Neighbours":
         temp = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
         compute_adjacency(temp)
     #temp = adjacency_dict[number_choice]
     #st.write(adjacency_dict)
-    slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC,choice_Plot,used_scheme)
+    slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_scheme)
 
     #compute_adjacency(Bendigodf)
 
 
-def slow_do_last(Bendigodf,ecoterns,adjacencies,choice_EVC,choice_Plot,used_scheme):
+def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_scheme):
     Bendigodf = Bendigodf.to_crs(epsg=4326)
 
-    ecoterns = list(ecoterns)
+    ecotones = list(ecotones)
     filtered_eco_tern = Bendigodf[Bendigodf.index.isin(adjacencies)]
     SingleEVC = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
 
-    if choice_Plot == "Pie Chart":
-        st.header("Big Values")
-        temp = Bendigodf[Bendigodf["AREASQM"]>=1000000]
-        fig = px.pie(temp, values='AREASQM', names=used_scheme, title="Area SQM of each EVC",)
-        st.plotly_chart(fig, theme=None)
+    if choice_Plot == "EVC Relative Area Pie Chart":
 
-        st.header("Small Values")
+        height_ = 450
 
-        temp = Bendigodf[Bendigodf["AREASQM"]<=1000000]
-        fig = px.pie(temp, values='AREASQM', names=used_scheme, title="Area SQM of each EVC",)
-        st.plotly_chart(fig, theme=None)
+
+        st.header("Cluttered Chart of EVCs")
+         fig = px.pie(Bendigodf, values='AREASQM', names=used_scheme, title="Metres Square Area  SQM of each EVC",)
+        fig.update_layout(height=height_)
+        st.plotly_chart(fig, theme=None, use_container_width = True,height=height_)
+
+        st.header("EVCs with total area > 10000000m^{2}")
+        temp = Bendigodf[Bendigodf["AREASQM"]>=10000000]
+        fig = px.pie(temp, values='AREASQM', names=used_scheme, title="Metres Square Area  SQM of each EVC",)
+        fig.update_layout(height=height_)
+        st.plotly_chart(fig, theme=None, use_container_width = True,height=height_)
+
+        st.header("EVCs with total area <= 10000000m^{2}")
+
+        temp = Bendigodf[Bendigodf["AREASQM"]<=10000000]
+        fig = px.pie(temp, values='AREASQM', names=used_scheme, title="Metres Square Area of each EVC",)
+        fig.update_layout(height=height_)
+        st.plotly_chart(fig, theme=None, use_container_width = True,height=height_)
 
     if choice_Plot == "All the EVCs togethor":
         st.subheader("All the EVCs")
@@ -284,19 +325,19 @@ def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
     for (ind,k) in enumerate(weight_dict_.keys()):
         category_weight_dict_[k] = ind
 
-    ecoterns = []
+    ecotones = []
 
     for number_choice in choice_df_index:
         for v in adjacency_dict[number_choice]:
             keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
             links_.append({"source":EVC_name_dict[number_choice],"target":EVC_name_dict[v],"value":weight_dict_[keyd]})
             nodes_.append({"index":cnt, "group":category_weight_dict_[keyd], "name":EVC_name_dict[number_choice]})
-            ecoterns.append(EVC_name_dict[number_choice])
+            ecotones.append(EVC_name_dict[number_choice])
             cnt+=1
 
     links = pd.DataFrame(links_)
     nodes = pd.DataFrame(nodes_)
-    ecoterns = set(ecoterns)
+    ecotones = set(ecotones)
 
 
     #for number_choice in choice_df_index:
@@ -415,7 +456,7 @@ def get_adjacency_net(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
     #adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
     #print(adjacent_indexs)
     #print(number_choice)
-    return ecoterns,adjacent_indexs
+    return ecotones,adjacent_indexs
 
 def dontdoagain():
     def get_adjacency_net_old(choice_df_index,adjacency_dict,EVC_name_dict,choice_Plot):
@@ -438,19 +479,19 @@ def dontdoagain():
         for (ind,k) in enumerate(weight_dict_.keys()):
             category_weight_dict_[k] = ind
 
-        ecoterns = []
+        ecotones = []
 
         for number_choice in choice_df_index:
             for v in adjacency_dict[number_choice]:
                 keyd = str(set([EVC_name_dict[number_choice],EVC_name_dict[v]]))
                 links_.append({"source":EVC_name_dict[number_choice],"target":EVC_name_dict[v],"value":weight_dict_[keyd]})
                 nodes_.append({"index":cnt, "group":category_weight_dict_[keyd], "name":EVC_name_dict[number_choice]})
-                ecoterns.append(EVC_name_dict[number_choice])
+                ecotones.append(EVC_name_dict[number_choice])
                 cnt+=1
 
         links = pd.DataFrame(links_)
         nodes = pd.DataFrame(nodes_)
-        ecoterns = set(ecoterns)
+        ecotones = set(ecotones)
 
 
         #for number_choice in choice_df_index:
@@ -506,7 +547,7 @@ def dontdoagain():
         #adjacent_indexs = [v for v in adjacency_dict[number_choice] ]
         #print(adjacent_indexs)
         #print(number_choice)
-        return ecoterns,adjacent_indexs
+        return ecotones,adjacent_indexs
 #url = 'https://raw.githubusercontent.com/plotly/plotly.js/master/test/image/mocks/sankey_energy.json'
 #response = urllib.request.urlopen(url)
 #data = json.loads(response.read())
