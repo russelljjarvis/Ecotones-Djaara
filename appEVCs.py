@@ -223,9 +223,18 @@ def main():
 
                 total_df = pd.concat([total_df,dests])
 
-            st.success("Finished")                
-        total_df.explore(used_scheme)
-        adjacency_dict = output
+            #st.success("Finished")                
+        #total_df.explore(used_scheme)
+
+        m = total_df.explore(used_scheme)
+        outfp = r"adjacent_indexs.html"
+        m.save(outfp)
+        HtmlFile = open(f'adjacent_indexs.html', 'r', encoding='utf-8')
+
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
+
+        #adjacency_dict = output
     if choice_Plot=="Static Network of Neighbours":
         temp = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
         compute_adjacency(temp)
