@@ -104,6 +104,7 @@ def main():
     Bendigodf = Load_EVC_DF()
 
     #with st.expander("What is This Dashboard About?"):
+
     with st.expander("What is a Plant Community?"):
         st.write('''
             This is not a formal definition, but a plant community is a group of the same or similar groups of plants that occur in close proximity to each other. 
