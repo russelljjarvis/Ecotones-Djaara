@@ -73,7 +73,7 @@ def compute_adjacency(Bendigodf):
 
     return adjacency_dict,engine
 
-st.header("Ecological Vegetation Classes (EVCs) of the Gold Fields Forest")
+st.title("Nature Stewards: Ecological Vegetation Classes (EVCs) of the Gold Fields Forest")
 
 #@st.cache_data
 def source_data():
@@ -426,7 +426,7 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
         m.save(outfp)
         HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
         # Load HTML file in HTML component for display on Streamlit page
-        st.title("Ecotones of: {0}".format(choice_EVC))
+        st.header("Ecotones of: {0}".format(choice_EVC))
         components.html(HtmlFile.read(), height=435)
 #from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 #import matplotlib.cm as cm
