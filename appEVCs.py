@@ -59,8 +59,6 @@ def compute_adjacency(Bendigodf):
 
     engine = AdjacencyEngine(Bendigodf.geometry)
     adjacency_dict = engine.get_adjacency_dict()
-    #print(adjacency_dict)
-    #engine.plot_adjacency_dict()
     fig, ax = plt.subplots(1, figsize=(5,5))
 
     engine.plot_adjacency_dict()
@@ -98,7 +96,6 @@ def source_data():
 
     return adjacency_dict,EVC_name_dict,named_connectome,links
 
-#source = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
 def renewed(source,Bendigodf):
     engine = AdjacencyEngine(source.geometry)
     adjacency_dict = engine.get_adjacency_dict()
@@ -128,7 +125,7 @@ def main():
                 When the same group of plants co-occur, they forming an observable re-occuring pattern to observers.
                 Plant communities, have membership and structural relationships.
             ''')
-            st.image("for_website_EVC.png")
+            st.image("commass.jpg")
 
 
         with st.expander("What is an Ecological Vegetation Class (EVC)?"):
@@ -140,15 +137,15 @@ def main():
         with st.expander("What is a Ecotone?"):
             st.write('''
                 An ecotone is an area of Victorian forest, that is poorly described by an EVC. 
-                The area in question may be situated between two or more EVCs, and because the neighbouring EVCs are blending into each other the area that is between the two ecotones has characteristics common to both 
+                The area in question may be situated between two or more EVCs, and because the neighbouring EVCs are blending into each other the area that is between the two EVCs has characteristics common to both 
                 of the peripheral EVCs at once. The result of blending two or more switch ecotones togethor is that they may be a poor fit for the pre-existing EVCs.
             ''')
             st.image("ecotonesSwitchPicture.png")
 
         with st.expander("What is the Motivation for this DashBoard?"):
             st.write('''
-            The motivation for this dashboard is to algorithmically iterate over all combinations of neighbouring EVCs, and for each EVC to ask what are the EVCs possible neighbours?
-                    For each possible pairs of EVC neighbours there can be an abstract Switch-Ecotones, and the locations of these Switch-Ecotones can be plotted on a map. 
+            The motivation for this dashboard is to iterate over all combinations of neighbouring EVCs, and for each EVC to ask what are the EVCs possible neighbours?
+                    For each possible pair of EVC there can be an Ecotones, and the locations of these Ecotones can be plotted on a map. 
                     To make this dashboard, I downloaded the data file gda2020_vicgrid EVCs from 2020 for all of Victoria, from the Victorians government open data portal. It contains the file "FLORAFAUNA1.gdb" which is readable by Geopandas in Python.
             ''')
 
