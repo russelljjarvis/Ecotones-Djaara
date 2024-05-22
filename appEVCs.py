@@ -12,8 +12,14 @@ from pyvis.network import Network
 import pyvis
 import os
 from matplotlib import pyplot as plt
-from scipy.spatial import voronoi_plot_2d
+#from scipy.spatial import voronoi_plot_2d
 from geo_adjacency.adjacency import AdjacencyEngine
+import geocoder
+from shapely.geometry import Point       
+
+
+# https://stackoverflow.com/questions/29797435/get-precise-android-gps-location-in-python
+
 #import osmnx as ox
 #from pyproj import Transformer
 import folium
@@ -65,15 +71,11 @@ def compute_adjacency(Bendigodf):
     Bendigodf.plot(ax=ax)
 
     st.pyplot()
-    
-    #voronoi_plot_2d(engine.vor)
-    #st.pyplot()
 
     return adjacency_dict,engine
 
 st.title("Nature Stewards: Ecological Vegetation Classes (EVCs) of the Gold Fields Forest")
 
-#@st.cache_data
 def source_data():
     try:
         with open("adjacency_dict.p","rb") as f:
@@ -83,8 +85,6 @@ def source_data():
         adjacency_dict,_ = compute_adjacency(Bendigodf)
         EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf[used_scheme].values))
         named_connectome = dict((EVC_name_dict[k],list(set([EVC_name_dict[v_] for v_ in v]))) for (k,v) in adjacency_dict.items() )
-        #enumerated_connectome = dict((EVC_name_dict[k],list(set([EVC_name_dict[v_] for v_ in v]))) for (k,v) in adjacency_dict.items() )
-        #simple_connectome = [ [v_ for v_ in v] for (k,v) in adjacency_dict.items() ]
         links_ = []
         for (k,v) in adjacency_dict.items():
             for target in v:
@@ -108,12 +108,8 @@ def renewed(source,Bendigodf):
 def main():
     Bendigodf = Load_EVC_DF()
     Bendigodf_ = copy.copy(Bendigodf)
-    #with st.expander("What is This Dashboard About?"):
-
     Bendigodf.reset_index(inplace=True)
-
     Bendigodf.drop(columns=["EVC_MUT","EVC_CODE","SCALE","EVC_BCS","EVC_GP","EVC_GO","EVC_GO_DESC","BIOEVC","EVC_BCS_DESC","EVC_BCS_SRC","EVC_SUBGP","BIOREGION","BIOREGION_CODE","VEG_CODE","BIOREGION_NO"],inplace=True)
-    #Bendigodf.drop("")
     Bendigodf = Bendigodf.to_crs(epsg=4326)
 
     adjacency_dict,EVC_name_dict,named_connectome,links = source_data()
@@ -140,6 +136,9 @@ def main():
                 The area in question may be situated between two or more EVCs, and because the neighbouring EVCs are blending into each other the area that is between the two EVCs has characteristics common to both 
                 of the peripheral EVCs at once. The result of blending two or more switch ecotones togethor is that they may be a poor fit for the pre-existing EVCs.
             ''')
+            st.header("Possible Ecotone")
+            st.image("4212399074159334139.jpg")
+
             st.image("ecotonesSwitchPicture.png")
 
         with st.expander("What is the Motivation for this DashBoard?"):
@@ -172,10 +171,7 @@ def main():
         if used_scheme == "Short EVC Description":
             used_scheme = "X_GROUPNAME"
 
-
         EVC_name_dict = dict((k,v) for k,v in enumerate(Bendigodf[used_scheme].values))
-        #with col3:
-
 
         # Add vertical scroll for radio.
         st.markdown("""
@@ -187,24 +183,28 @@ def main():
         </style>
         """,
         unsafe_allow_html=True)
-        #col = st.columns(2, gap='medium')
         big_list = set(EVC_name_dict.values())
-        #with col[0]:
         choice_EVC = st.radio('Scrollable EVC Select', big_list, label_visibility='collapsed',index=1, key='rb_1')
-
-        #ith col[1]:
-        #    st.text_input('Value selected', key='ti_1')
-        #st.write(set(EVC_name_dict.values()))
-        
-    #choice_EVC = st.radio("choose EVC",,index=0)
     with col3:
 
-        choice_Plot = st.radio("Choose Plot Type",["Ecotones+Selected EVC","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotone","Network of Neighbouring EVCs","Static Network of Neighbours","Municipilities of Bendigo","Re-Hashed"],index=0)
+        choice_Plot = st.radio("Choose Plot Type",["EVC at My Current Location","Ecotones+Selected EVC","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotone","Network of Neighbouring EVCs","Static Network of Neighbours","Municipilities of Bendigo","Re-Hashed"],index=0)
+    if choice_Plot == "EVC at My Current Location":
+        g = geocoder.ip('me')
+  
+        polygon_index = Bendigodf.geometry.distance(Point(g.latlng)).sort_values().index[0]
+        subset = Bendigodf[Bendigodf.index==polygon_index]
+
+        m = subset.explore()
+        outfp = r"your_current_location.html"
+        m.save(outfp)
+        HtmlFile = open(f'your_current_location.html', 'r', encoding='utf-8')
+
+        # Load HTML file in HTML component for display on Streamlit page
+        components.html(HtmlFile.read(), height=435)
+
     if choice_Plot=="Re-Hashed":
-        Bendigodf.reset_index(inplace=True)
 
         source_geometries = Bendigodf[Bendigodf[used_scheme]==choice_EVC]
-        #source_geometries.reset_index(inplace=True)
         target_geometries = Bendigodf.geometry
         target_geometries_ = Bendigodf
         with st.spinner('Wait for it...'):
@@ -257,6 +257,9 @@ def main():
     origins = Bendigodf[Bendigodf.index.isin(choice_df_index)]    
 
     temp = Bendigodf[Bendigodf.index.isin(adjacent_indexs)]    
+    #st.write(g.latlng)
+    slow_do_last(Bendigodf,ecotones,adjacent_indexs,choice_EVC,choice_Plot,used_scheme)
+
     if False:
     
         m = temp.explore(used_scheme)
@@ -305,8 +308,6 @@ def main():
 
     #adjacent_indexs = [v for number_choice in choice_df_index for v in adjacency_dict[number_choice] ]
     #adjacent_indexs.extend(choice_df_index)
-
-    slow_do_last(Bendigodf,ecotones,adjacent_indexs,choice_EVC,choice_Plot,used_scheme)
 # def venn_diagram():
 #     import pylab as plt
 #     from matplotlib_venn import venn3, venn3_circles
@@ -365,15 +366,33 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
         st.subheader("All the EVCs")
         whole_population_render(Bendigodf,used_scheme)
 
+
+
+    def displayPDF(file):
+        # Opening file from file path
+        with open(file, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+
+        # Embedding PDF in HTML
+        pdf_display = F'<embed src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf">'
+
+        # Displaying File
+        st.markdown(pdf_display, unsafe_allow_html=True)        
+
     if choice_Plot == "Municipilities of Bendigo":
         gdfBendigo = goldfieldslocations()
         m = gdfBendigo.explore("vic_loca_2")
         outfp = r"base_map.html"
         m.save(outfp)
         HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
-
+        col1, col2 = st.columns(3)
+        with col1:
         # Load HTML file in HTML component for display on Streamlit page
-        components.html(HtmlFile.read(), height=435)
+            components.html(HtmlFile.read(), height=435)
+        with col2:
+           displayPDF("NN Network Map.pdf")
+
+
 
         #st.map(m)
 
