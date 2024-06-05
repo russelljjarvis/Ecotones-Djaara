@@ -14,7 +14,7 @@ import os
 from matplotlib import pyplot as plt
 #from scipy.spatial import voronoi_plot_2d
 from geo_adjacency.adjacency import AdjacencyEngine
-import geocoder
+#import geocoder
 from shapely.geometry import Point       
 
 
@@ -188,19 +188,19 @@ def main():
     with col3:
 
         choice_Plot = st.radio("Choose Plot Type",["EVC at My Current Location","Ecotones+Selected EVC","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotone","Network of Neighbouring EVCs","Static Network of Neighbours","Municipilities of Bendigo","Re-Hashed"],index=0)
-    if choice_Plot == "EVC at My Current Location":
-        g = geocoder.ip('me')
+    #if choice_Plot == "EVC at My Current Location":
+    #    g = geocoder.ip('me')
   
-        polygon_index = Bendigodf.geometry.distance(Point(g.latlng)).sort_values().index[0]
-        subset = Bendigodf[Bendigodf.index==polygon_index]
+    #    polygon_index = Bendigodf.geometry.distance(Point(g.latlng)).sort_values().index[0]
+    #    subset = Bendigodf[Bendigodf.index==polygon_index]
 
-        m = subset.explore()
-        outfp = r"your_current_location.html"
-        m.save(outfp)
-        HtmlFile = open(f'your_current_location.html', 'r', encoding='utf-8')
+    #    m = subset.explore()
+    #    outfp = r"your_current_location.html"
+    #    m.save(outfp)
+    #    HtmlFile = open(f'your_current_location.html', 'r', encoding='utf-8')
 
         # Load HTML file in HTML component for display on Streamlit page
-        components.html(HtmlFile.read(), height=435)
+    #    components.html(HtmlFile.read(), height=435)
 
     if choice_Plot=="Re-Hashed":
 
