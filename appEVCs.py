@@ -187,7 +187,7 @@ def main():
         choice_EVC = st.radio('Scrollable EVC Select', big_list, label_visibility='collapsed',index=1, key='rb_1')
     with col3:
 
-        choice_Plot = st.radio("Choose Plot Type",["EVC at My Current Location","Ecotones+Selected EVC","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotone","Network of Neighbouring EVCs","Static Network of Neighbours","Municipilities of Bendigo","Re-Hashed"],index=0)
+        choice_Plot = st.radio("Choose Plot Type",["Ecotones+Selected EVC","All the EVCs togethor","Selected EVC","EVC Relative Area Pie Chart","Ecotone","Network of Neighbouring EVCs","Static Network of Neighbours","Municipilities of Bendigo","Re-Hashed"],index=0)
     #if choice_Plot == "EVC at My Current Location":
     #    g = geocoder.ip('me')
   
