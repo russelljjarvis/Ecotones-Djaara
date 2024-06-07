@@ -385,7 +385,7 @@ def slow_do_last(Bendigodf,ecotones,adjacencies,choice_EVC,choice_Plot,used_sche
         outfp = r"base_map.html"
         m.save(outfp)
         HtmlFile = open(f'base_map.html', 'r', encoding='utf-8')
-        col1, col2 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
         # Load HTML file in HTML component for display on Streamlit page
             components.html(HtmlFile.read(), height=435)
